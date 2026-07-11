@@ -54,7 +54,7 @@
         <div class="info">
             SCORE: <span id="score">0</span> | LIVES: <span id="lives">3</span>
         </div>
-        <div class="controls">MOUSE or ← → TO MOVE | P TO PAUSE | SPACE or CLICK TO START</div>
+        <div class="controls">MOUSE or ← → TO MOVE | P TO PAUSE | SPACE or CLICK TO PLAY</div>
     </div>
 
     <script>
@@ -95,6 +95,7 @@
         let gameOver = false;
         let gameWon = false;
         let paused = false;
+        let inMenu = true;
 
         const paddle = {
             width: 120,
@@ -334,6 +335,33 @@
             ctx.fillText('Press SPACE to start', canvas.width / 2, canvas.height / 2);
         }
 
+        function drawMenu() {
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+
+            ctx.font = '56px Courier New';
+            ctx.fillText('BRICK BREAKER', canvas.width / 2, canvas.height / 2 - 90);
+
+            ctx.font = '18px Courier New';
+            ctx.fillStyle = '#ccc';
+            ctx.fillText('Break every brick to win', canvas.width / 2, canvas.height / 2 - 40);
+
+            ctx.fillStyle = '#888';
+            ctx.font = '15px Courier New';
+            ctx.fillText('MOUSE or ← →  to move the paddle', canvas.width / 2, canvas.height / 2 + 10);
+            ctx.fillText('P to pause   |   SPACE or CLICK to launch', canvas.width / 2, canvas.height / 2 + 40);
+
+            const blink = Math.floor(Date.now() / 500) % 2 === 0;
+            if (blink) {
+                ctx.fillStyle = '#fff';
+                ctx.font = '24px Courier New';
+                ctx.fillText('Press SPACE or CLICK to Play', canvas.width / 2, canvas.height / 2 + 110);
+            }
+        }
+
         function drawPause() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -365,6 +393,10 @@
         }
 
         function draw() {
+            if (inMenu) {
+                drawMenu();
+                return;
+            }
             ctx.fillStyle = '#111';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drawBricks();
@@ -390,6 +422,11 @@
                 if (!paused) paddle.dx = paddle.speed;
             } else if (e.key === ' ') {
                 e.preventDefault();
+                if (inMenu) {
+                    inMenu = false;
+                    gameStarted = true;
+                    return;
+                }
                 if (gameOver || gameWon) {
                     resetGame();
                 } else if (!gameStarted) {
@@ -419,6 +456,11 @@
 
         canvas.addEventListener('click', () => {
             if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (inMenu) {
+                inMenu = false;
+                gameStarted = true;
+                return;
+            }
             if (gameOver || gameWon) {
                 resetGame();
             } else if (!gameStarted) {
