@@ -96,6 +96,9 @@
         let gameWon = false;
         let paused = false;
         let inMenu = true;
+        let level = 1;
+        let levelComplete = false;
+        let baseSpeed = 5;
 
         const paddle = {
             width: 120,
@@ -132,7 +135,12 @@
             for (let r = 0; r < brickConfig.rows; r++) {
                 bricks[r] = [];
                 for (let c = 0; c < brickConfig.cols; c++) {
-                    bricks[r][c] = { x: 0, y: 0, alive: true };
+                    let color = null;
+                    if (level >= 2) {
+                        const hue = Math.floor((c / (brickConfig.cols - 1)) * 300 + r * 12) % 360;
+                        color = `hsl(${hue}, 90%, 55%)`;
+                    }
+                    bricks[r][c] = { x: 0, y: 0, alive: true, color: color };
                 }
             }
         }
@@ -206,7 +214,7 @@
                         const brickY = r * (brickConfig.height + brickConfig.padding) + brickConfig.offsetTop;
                         bricks[r][c].x = brickX;
                         bricks[r][c].y = brickY;
-                        ctx.fillStyle = getBrickColor();
+                        ctx.fillStyle = bricks[r][c].color || getBrickColor();
                         ctx.fillRect(brickX, brickY, brickConfig.width, brickConfig.height);
                     }
                 }
@@ -273,7 +281,7 @@
                 ball.dy *= 0.985;
                 ball.y = paddle.y - ball.radius;
                 const hitPoint = (ball.x - paddle.x) / paddle.width;
-                ball.dx = 5 * (hitPoint - 0.5) * 2;
+                ball.dx = baseSpeed * (hitPoint - 0.5) * 2;
                 soundPaddleHit();
             }
 
@@ -293,7 +301,11 @@
                             scoreEl.textContent = score;
                             soundBrickHit();
                             if (bricks.every(row => row.every(b => !b.alive))) {
-                                gameWon = true;
+                                if (level === 1) {
+                                    levelComplete = true;
+                                } else {
+                                    gameWon = true;
+                                }
                                 soundWin();
                             }
                         }
@@ -305,8 +317,8 @@
         function resetBall() {
             ball.x = paddle.x + paddle.width / 2;
             ball.y = paddle.y - ball.radius;
-            ball.dx = 5 * (Math.random() > 0.5 ? 1 : -1);
-            ball.dy = -5;
+            ball.dx = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
+            ball.dy = -baseSpeed;
             gameStarted = false;
         }
 
@@ -328,6 +340,15 @@
             ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 40);
         }
 
+        function drawLevelClear() {
+            ctx.fillStyle = '#fff';
+            ctx.font = '40px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('LEVEL 1 CLEAR', canvas.width / 2, canvas.height / 2 - 10);
+            ctx.font = '18px Courier New';
+            ctx.fillText('Press SPACE or CLICK for Level 2', canvas.width / 2, canvas.height / 2 + 35);
+        }
+
         function drawStart() {
             ctx.fillStyle = '#fff';
             ctx.font = '22px Courier New';
@@ -347,7 +368,7 @@
 
             ctx.font = '18px Courier New';
             ctx.fillStyle = '#ccc';
-            ctx.fillText('Break every brick to win', canvas.width / 2, canvas.height / 2 - 40);
+            ctx.fillText('Clear all bricks to reach Level 2', canvas.width / 2, canvas.height / 2 - 40);
 
             ctx.fillStyle = '#888';
             ctx.font = '15px Courier New';
@@ -373,9 +394,28 @@
             ctx.fillText('Press P to resume', canvas.width / 2, canvas.height / 2 + 35);
         }
 
+        function loadLevel(n) {
+            level = n;
+            brickConfig.rows = (n === 2 ? 9 : 7);
+            baseSpeed = (n === 2 ? 7 : 5);
+            createBricks();
+            paddle.x = canvas.width / 2 - paddle.width / 2;
+            ball.x = paddle.x + paddle.width / 2;
+            ball.y = paddle.y - ball.radius;
+            ball.dx = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
+            ball.dy = -baseSpeed;
+            gameStarted = true;
+            gameOver = false;
+            gameWon = false;
+            levelComplete = false;
+        }
+
         function resetGame() {
             score = 0;
             lives = 3;
+            level = 1;
+            baseSpeed = 5;
+            brickConfig.rows = 7;
             particles = [];
             scoreEl.textContent = score;
             livesEl.textContent = lives;
@@ -384,6 +424,7 @@
             resetBall();
             gameOver = false;
             gameWon = false;
+            levelComplete = false;
         }
 
         function update() {
@@ -405,6 +446,7 @@
             drawBall();
             if (paused) drawPause();
             else if (gameOver) drawGameOver();
+            else if (levelComplete) drawLevelClear();
             else if (gameWon) drawWin();
             else if (!gameStarted) drawStart();
         }
@@ -424,7 +466,11 @@
                 e.preventDefault();
                 if (inMenu) {
                     inMenu = false;
-                    gameStarted = true;
+                    loadLevel(1);
+                    return;
+                }
+                if (levelComplete) {
+                    loadLevel(2);
                     return;
                 }
                 if (gameOver || gameWon) {
@@ -433,7 +479,7 @@
                     gameStarted = true;
                 }
             } else if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
-                if (gameStarted && !gameOver && !gameWon) {
+                if (gameStarted && !gameOver && !gameWon && !levelComplete) {
                     paused = !paused;
                 }
             }
@@ -458,7 +504,11 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
             if (inMenu) {
                 inMenu = false;
-                gameStarted = true;
+                loadLevel(1);
+                return;
+            }
+            if (levelComplete) {
+                loadLevel(2);
                 return;
             }
             if (gameOver || gameWon) {

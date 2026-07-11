@@ -13,9 +13,11 @@ A classic brick breaker game with black & white design.
 [Click here to play!](https://fountainnsz-ux.github.io/brick-breaker/brick-breaker.html)
 
 ## Features
+- Two levels — Level 1 (grayscale) and Level 2 (colorful RGB, 9 rows, faster ball)
 - Black & white minimalist design
 - Particle effects on brick destruction
 - Dynamic brick colors based on score
 - Ball speed increases per brick hit
 - Pause menu
+- Start menu
 - Sound effects
