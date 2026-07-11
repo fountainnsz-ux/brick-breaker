@@ -99,6 +99,13 @@
         let levelComplete = false;
         let baseSpeed = 5;
         let gameOverTime = 0;
+        const maxLevel = 3;
+
+        const levelDefs = [
+            { rows: 7,  cols: 12, speed: 5, shape: 'rectangle' },
+            { rows: 11, cols: 12, speed: 7, shape: 'diamond' },
+            { rows: 11, cols: 12, speed: 9, shape: 'heart' }
+        ];
 
         const paddle = {
             width: 120,
@@ -130,17 +137,40 @@
         let bricks = [];
         let particles = [];
 
+        function shapeAlive(shape, r, c, rows, cols) {
+            if (shape === 'rectangle') {
+                return true;
+            }
+            if (shape === 'diamond') {
+                const cr = (rows - 1) / 2;
+                const cc = (cols - 1) / 2;
+                const radius = Math.min(cr, cc);
+                return Math.abs(r - cr) + Math.abs(c - cc) <= radius;
+            }
+            if (shape === 'heart') {
+                const cr = (rows - 1) / 2;
+                const cc = (cols - 1) / 2;
+                const x = (c - cc) / cc;
+                const y = (cr - r) / cr;
+                const v = Math.pow(x * x + y * y - 1, 3) - x * x * y * y * y;
+                return v <= 0;
+            }
+            return true;
+        }
+
         function createBricks() {
             bricks = [];
-            for (let r = 0; r < brickConfig.rows; r++) {
+            const def = levelDefs[level - 1];
+            for (let r = 0; r < def.rows; r++) {
                 bricks[r] = [];
-                for (let c = 0; c < brickConfig.cols; c++) {
+                for (let c = 0; c < def.cols; c++) {
                     let color = null;
                     if (level >= 2) {
-                        const hue = Math.floor((c / (brickConfig.cols - 1)) * 300 + r * 12) % 360;
+                        const hue = Math.floor((c / (def.cols - 1)) * 300 + r * 12) % 360;
                         color = `hsl(${hue}, 90%, 55%)`;
                     }
-                    bricks[r][c] = { x: 0, y: 0, alive: true, color: color };
+                    const alive = shapeAlive(def.shape, r, c, def.rows, def.cols);
+                    bricks[r][c] = { x: 0, y: 0, alive: alive, color: color };
                 }
             }
         }
@@ -304,7 +334,7 @@
                             scoreEl.textContent = score;
                             soundBrickHit();
                             if (bricks.every(row => row.every(b => !b.alive))) {
-                                if (level === 1) {
+                                if (level < maxLevel) {
                                     levelComplete = true;
                                 } else {
                                     gameWon = true;
@@ -369,9 +399,9 @@
             ctx.fillStyle = '#fff';
             ctx.font = '40px Courier New';
             ctx.textAlign = 'center';
-            ctx.fillText('LEVEL 1 CLEAR', canvas.width / 2, canvas.height / 2 - 10);
+            ctx.fillText('LEVEL ' + level + ' CLEAR', canvas.width / 2, canvas.height / 2 - 10);
             ctx.font = '18px Courier New';
-            ctx.fillText('Press SPACE or CLICK for Level 2', canvas.width / 2, canvas.height / 2 + 35);
+            ctx.fillText('Press SPACE or CLICK for Level ' + (level + 1), canvas.width / 2, canvas.height / 2 + 35);
         }
 
         function drawStart() {
@@ -393,7 +423,7 @@
 
             ctx.font = '18px Courier New';
             ctx.fillStyle = '#ccc';
-            ctx.fillText('Clear all bricks to reach Level 2', canvas.width / 2, canvas.height / 2 - 40);
+            ctx.fillText('Clear all bricks to advance through ' + maxLevel + ' levels', canvas.width / 2, canvas.height / 2 - 40);
 
             ctx.fillStyle = '#888';
             ctx.font = '15px Courier New';
@@ -421,8 +451,11 @@
 
         function loadLevel(n) {
             level = n;
-            brickConfig.rows = (n === 2 ? 9 : 7);
-            baseSpeed = (n === 2 ? 7 : 5);
+            const def = levelDefs[level - 1];
+            brickConfig.rows = def.rows;
+            brickConfig.cols = def.cols;
+            brickConfig.offsetLeft = (canvas.width - (def.cols * brickConfig.width + (def.cols - 1) * brickConfig.padding)) / 2;
+            baseSpeed = def.speed;
             createBricks();
             paddle.x = canvas.width / 2 - paddle.width / 2;
             ball.x = paddle.x + paddle.width / 2;
@@ -439,8 +472,11 @@
             score = 0;
             lives = 3;
             level = 1;
-            baseSpeed = 5;
-            brickConfig.rows = 7;
+            const def = levelDefs[0];
+            brickConfig.rows = def.rows;
+            brickConfig.cols = def.cols;
+            brickConfig.offsetLeft = (canvas.width - (def.cols * brickConfig.width + (def.cols - 1) * brickConfig.padding)) / 2;
+            baseSpeed = def.speed;
             particles = [];
             scoreEl.textContent = score;
             livesEl.textContent = lives;
@@ -496,7 +532,7 @@
                     return;
                 }
                 if (levelComplete) {
-                    loadLevel(2);
+                    loadLevel(level + 1);
                     return;
                 }
                 if (gameOver || gameWon) {
@@ -534,7 +570,7 @@
                 return;
             }
             if (levelComplete) {
-                loadLevel(2);
+                loadLevel(level + 1);
                 return;
             }
             if (gameOver || gameWon) {
