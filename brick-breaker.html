@@ -82,7 +82,6 @@
         function soundPaddleHit() { playSound(400, 'triangle', 0.1); }
         function soundWallHit() { playSound(300, 'sine', 0.05); }
         function soundLoseLife() { playSound(150, 'sawtooth', 0.3); }
-        function soundGameOver() { playSound(100, 'sawtooth', 0.5); }
         function soundWin() {
             playSound(523, 'square', 0.1);
             setTimeout(() => playSound(659, 'square', 0.1), 100);
@@ -99,6 +98,7 @@
         let level = 1;
         let levelComplete = false;
         let baseSpeed = 5;
+        let gameOverTime = 0;
 
         const paddle = {
             width: 120,
@@ -264,7 +264,7 @@
                 livesEl.textContent = lives;
                 if (lives <= 0) {
                     gameOver = true;
-                    soundGameOver();
+                    gameOverTime = Date.now();
                 } else {
                     soundLoseLife();
                     resetBall();
@@ -323,12 +323,34 @@
         }
 
         function drawGameOver() {
-            ctx.fillStyle = '#fff';
-            ctx.font = '40px Courier New';
+            const a = Math.min(1, (Date.now() - gameOverTime) / 800);
+
+            ctx.fillStyle = `rgba(120, 0, 0, ${0.5 * a})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.globalAlpha = a;
             ctx.textAlign = 'center';
-            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
-            ctx.font = '18px Courier New';
-            ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 40);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 110px Arial, sans-serif';
+            ctx.shadowColor = 'rgba(200, 0, 0, 0.95)';
+            ctx.shadowBlur = 30;
+            ctx.shadowOffsetX = 5;
+            ctx.shadowOffsetY = 5;
+            ctx.fillText('WASTED', canvas.width / 2, canvas.height / 2 - 10);
+
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.fillStyle = '#ddd';
+            ctx.font = 'bold 26px Arial, sans-serif';
+            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 + 45);
+
+            ctx.fillStyle = '#aaa';
+            ctx.font = '16px Courier New';
+            ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 85);
+            ctx.restore();
         }
 
         function drawWin() {
@@ -425,6 +447,7 @@
             gameOver = false;
             gameWon = false;
             levelComplete = false;
+            gameOverTime = 0;
         }
 
         function update() {
