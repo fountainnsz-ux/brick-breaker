@@ -233,6 +233,7 @@
                 ball.y = paddle.y - ball.radius;
                 return;
             }
+            if (gameOver || gameWon || levelComplete) return;
 
             ball.x += ball.dx;
             ball.y += ball.dy;
@@ -260,14 +261,16 @@
             }
 
             if (ball.y + ball.radius > canvas.height) {
-                lives--;
-                livesEl.textContent = lives;
-                if (lives <= 0) {
-                    gameOver = true;
-                    gameOverTime = Date.now();
-                } else {
-                    soundLoseLife();
-                    resetBall();
+                if (!gameOver) {
+                    lives--;
+                    livesEl.textContent = lives;
+                    if (lives <= 0) {
+                        gameOver = true;
+                        gameOverTime = Date.now();
+                    } else {
+                        soundLoseLife();
+                        resetBall();
+                    }
                 }
             }
 
